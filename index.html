@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Confession from Subkhan to Nada</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: linear-gradient(135deg, #ffb6d5 0%, #ffe6f0 40%, #fff0f6 100%);
+    font-family: 'Poppins', sans-serif;
+    display: flex; justify-content: center; align-items: center;
+    user-select: none; overflow: hidden;
+  }
+  .page { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; align-items: center; }
+  .active { display: flex; }
+  h1 { font-size: 2.25rem; color: #d6336c; margin-bottom: 2rem; font-weight: 700; text-shadow: 0 0 8px #ff85a2; }
+  .buttons { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+  button {
+    cursor: pointer; border: none; border-radius: 50px;
+    padding: 0.75rem 1.8rem; font-size: 1.1rem; font-weight: 600;
+    color: white; background: #d6336c;
+    box-shadow: 0 4px 10px rgba(214, 51, 108, 0.6);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    min-width: 140px; flex: 1 1 140px; max-width: 45vw;
+  }
+  button:active { transform: scale(0.95); }
+  button.yes { background: #ff4d94; }
+  button.yes:hover { background: #ff6ab3; }
+  .glow-pulse {
+    font-size: 1.3rem; padding: 1rem 2.5rem; background: #ff4d94;
+    animation: pulseGlow 2.5s infinite ease-in-out;
+  }
+  @keyframes pulseGlow { 0%,100%{box-shadow:0 0 15px #ff4d94;} 50%{box-shadow:0 0 30px #ff85a2;} }
+  #overlay {
+    position: fixed; inset: 0; background: rgba(255,182,193,0.95);
+    display: flex; justify-content: center; align-items: center;
+    font-size: 2rem; color: #d6336c; font-weight: 700;
+    text-align: center; z-index: 999; opacity: 0; visibility: hidden;
+    transition: opacity 0.5s ease; padding: 1rem;
+  }
+  #overlay.show { opacity: 1; visibility: visible; }
+  #heart-particles,#sakura-particles {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none;
+  }
+  #heart-particles { z-index: 10; } #sakura-particles { z-index: 2000; }
+  .heart { position: absolute; font-size: 18px; opacity: 0.9;
+    filter: drop-shadow(0 0 6px #ff85a2); animation: floatUp 1.5s forwards; }
+  @keyframes floatUp {
+    0%{transform:translate(0,0) scale(1) rotate(0);opacity:1;}
+    50%{transform:translate(var(--x),var(--y)) scale(1.3) rotate(15deg);opacity:0.8;}
+    100%{transform:translate(calc(var(--x)*2),calc(var(--y)*2 - 40px)) scale(0.8) rotate(-15deg);opacity:0;}
+  }
+  .sakura { position: absolute; font-size: 18px; opacity: 0.85;
+    animation: fall linear forwards; color: #ffb7c5; text-shadow: 0 0 6px #ff85a2; }
+  @keyframes fall {
+    0%{transform:translateX(0) translateY(0) rotate(0);opacity:1;}
+    100%{transform:translateX(var(--x)) translateY(100vh) rotate(360deg);opacity:0;}
+  }
+  /* login page */
+  #login-box { display:flex; flex-direction:column; gap:1rem; width:250px; }
+  #login-box input { padding:0.6rem 1rem; border-radius:8px; border:1px solid #ccc; font-size:1rem; }
+  /* play page */
+  #play-page h2 { font-size:2.5rem; color:#d6336c; }
+  .scroll-text { position:absolute; bottom:10px; font-size:1.2rem; color:#d6336c;
+    animation: scrollUp 6s linear forwards; white-space:nowrap; }
+  @keyframes scrollUp { from{bottom:10px;opacity:1;} to{bottom:100%;opacity:0;} }
+</style>
+</head>
+<body>
+  <div id="overlay"></div>
+  <!-- Confess Page -->
+  <div id="confess-page" class="page active">
+    <div class="container">
+      <h1>Nada, mau jadi pacarku?</h1>
+      <div class="buttons" id="buttons-container">
+        <button class="yes" id="yes-btn">Mau jadi pacar ku</button>
+        <button class="no" id="no-btn">Tidak mau jadi pacar ku</button>
+      </div>
+    </div>
+  </div>
+  <!-- Login Page -->
+  <div id="login-page" class="page">
+    <h1>Login</h1>
+    <div id="login-box">
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+      <button onclick="goTo('confess-page')">Kembali</button>
+    </div>
+  </div>
+  <!-- Play Page -->
+  <div id="play-page" class="page">
+    <h2>Play</h2>
+    <div class="scroll-text">This is the beginning of our story ❤️</div>
+  </div>
+  <div id="heart-particles"></div>
+  <div id="sakura-particles"></div>
+
+<script>
+(() => {
+  const noBtn = document.getElementById("no-btn");
+  const yesBtn = document.getElementById("yes-btn");
+  const buttonsContainer = document.getElementById("buttons-container");
+  const heartParticles = document.getElementById("heart-particles");
+  const sakuraParticles = document.getElementById("sakura-particles");
+  const overlay = document.getElementById("overlay");
+  let clicks = 0, maxClicks = 20, lastX = noBtn.offsetLeft, lastY = noBtn.offsetTop;
+  let sakuraStarted = false;
+
+  function showOverlay(message, duration=5000, callback){
+    overlay.textContent = message; overlay.classList.add("show");
+    if(duration===Infinity) return;
+    setTimeout(()=>{ overlay.classList.remove("show"); if(callback)callback(); },duration);
+  }
+  function spawnHeart(x,y){
+    const heart=document.createElement("div");
+    heart.className="heart"; heart.textContent="❤️";
+    heart.style.left=x+"px"; heart.style.top=y+"px";
+    heart.style.fontSize=(16+Math.random()*10)+"px";
+    heart.style.setProperty("--x",(Math.random()*40-20)+"px");
+    heart.style.setProperty("--y",(Math.random()*-30-10)+"px");
+    heart.style.transform=`rotate(${Math.random()*360}deg)`;
+    heartParticles.appendChild(heart); setTimeout(()=>heart.remove(),1500);
+  }
+  function spawnHeartsCurvedPath(x1,y1,x2,y2){
+    const steps=20;
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;
+      const cx=(x1+x2)/2+(Math.random()*100-50);
+      const cy=(y1+y2)/2+(Math.random()*80-40);
+      const x=(1-t)*(1-t)*x1+2*(1-t)*t*cx+t*t*x2;
+      const y=(1-t)*(1-t)*y1+2*(1-t)*t*cy+t*t*y2;
+      setTimeout(()=>spawnHeart(x,y),i*40);
+    }
+  }
+  function moveNoButton(){
+    const vw=window.innerWidth,vh=window.innerHeight;
+    const btnRect=noBtn.getBoundingClientRect(),yesRect=yesBtn.getBoundingClientRect();
+    const padding=16,maxX=vw-btnRect.width-padding,maxY=vh-btnRect.height-padding;
+    let newX,newY,tries=0;
+    do{ newX=Math.random()*maxX; newY=Math.random()*maxY; tries++; }
+    while(tries<100 && !(newX+btnRect.width<yesRect.left||newX>yesRect.right||newY+btnRect.height<yesRect.top||newY>yesRect.bottom));
+    noBtn.style.position="fixed";
+    noBtn.style.transition="left 0.5s ease, top 0.5s ease";
+    noBtn.style.left=`${newX}px`; noBtn.style.top=`${newY}px`;
+    spawnHeartsCurvedPath(lastX,lastY,newX,newY); lastX=newX; lastY=newY;
+  }
+  function spawnSakura(){
+    const sakura=document.createElement("div");
+    sakura.className="sakura"; sakura.textContent="🌸";
+    sakura.style.left=Math.random()*window.innerWidth+"px";
+    sakura.style.top="-30px"; sakura.style.fontSize=(16+Math.random()*12)+"px";
+    sakura.style.setProperty("--x",(Math.random()*200-100)+"px");
+    sakura.style.animationDuration=(4+Math.random()*3)+"s";
+    sakuraParticles.appendChild(sakura); setTimeout(()=>sakura.remove(),7000);
+  }
+  function startSakura(){ if(sakuraStarted)return; sakuraStarted=true; setInterval(spawnSakura,400); }
+  function onNoClick(){
+    if(clicks>=maxClicks)return; clicks++; moveNoButton();
+    if(clicks===10){ noBtn.style.display="none"; showOverlay("Hey ayolah terima saja",5000,()=>{noBtn.style.display="inline-block";}); }
+    if(clicks===maxClicks){
+      noBtn.style.display="none"; showOverlay("Kali ini lu gabisa nolak",5000,()=>{
+        buttonsContainer.innerHTML=""; for(let i=0;i<2;i++){
+          const btn=document.createElement("button"); btn.type="button";
+          btn.className="yes glow-pulse"; btn.textContent="Mau jadi pacar ku";
+          btn.addEventListener("click",()=>{ showOverlay("BILANG YA PADAKU SEKARANG JUGA",Infinity);
+            startSakura(); addNextButton(); }); buttonsContainer.appendChild(btn);
+        }
+      });
+    }
+  }
+  function addNextButton(){
+    const next=document.createElement("button");
+    next.textContent="Next ➡️"; next.style.marginTop="20px";
+    next.addEventListener("click",()=>goTo("login-page"));
+    overlay.appendChild(next);
+  }
+  noBtn.addEventListener("click",onNoClick);
+  yesBtn.addEventListener("click",()=>{ showOverlay("BILANG YA PADAKU SEKARANG JUGA",Infinity); startSakura(); addNextButton(); });
+})();
+
+function goTo(id){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.getElementById("overlay").classList.remove("show");
+}
+function login(){
+  const user=document.getElementById("username").value;
+  const pass=document.getElementById("password").value;
+  if(user==="nada"&&pass==="subkhan123"){ goTo("play-page"); }
+  else{ alert("Salah! coba lagi dong 😡"); }
+}
+</script>
+</body>
+</html>
